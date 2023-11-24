@@ -49,9 +49,14 @@ with tab1:
     vertical_space(1)
     st.text("Card Number")
 
-    col21, col22 = st.columns(2)
+    col21, col22, col23 = st.columns(3)
     card_number_filter = col21.text_input("Card Number", label_visibility="collapsed", key="leaderboard")
     filter_btn = col22.button("Filter")
+    update_btn = col23.button("Update")
+    if update_btn:
+        st.caching.clear_cache()
+        raise st.ScriptRunner.RerunException
+
 
     vertical_space(1)
 
