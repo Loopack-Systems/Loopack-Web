@@ -55,7 +55,7 @@ with tab1:
     update_btn = col23.button("Update")
     if update_btn:
         st.cache_resource.clear()
-        raise st.ScriptRunner.RerunException
+        st.rerun()
 
 
     vertical_space(1)
