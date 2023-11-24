@@ -54,7 +54,7 @@ with tab1:
     filter_btn = col22.button("Filter")
     update_btn = col23.button("Update")
     if update_btn:
-        st.cache_resource.clear_cache()
+        st.cache_resource.clear()
         raise st.ScriptRunner.RerunException
 
 
