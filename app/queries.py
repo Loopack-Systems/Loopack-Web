@@ -79,7 +79,7 @@ class Queries():
                     drinks as (
                         select
                         refund_card_id,
-                        count(cup_id) as Drinks
+                        count(cup_id) as num_drinks
                         from
                         cup_event
                         where
@@ -90,7 +90,7 @@ class Queries():
                     returned as (
                         select
                         refund_card_id,
-                        count(cup_id) as Returns
+                        count(cup_id) as num_returned_cups
                         from
                         cup_event
                         where
@@ -99,10 +99,10 @@ class Queries():
                         refund_card_id
                     )
                     select
-                    c.number as ID,
-                    d.Drinks,
-                    r.Returns,
-                    r.Returns * 0.1 as Impact
+                    c.number as card_number,
+                    d.num_drinks,
+                    r.num_returned_cups,
+                    r.num_returned_cups * 0.1 as impact
                     from
                     drinks d
                     join returned r on d.refund_card_id = r.refund_card_id
@@ -118,7 +118,7 @@ class Queries():
 
         status = self.__get_users_status()
 
-        df = df.merge(status, on="ID", how="left")
+        df = df.merge(status, on="card_number", how="left")
         df = df.fillna(False)
         df = df.sort_values(by="num_returned_cups")
 

@@ -61,10 +61,11 @@ with tab1:
 
     vertical_space(1)
 
-    ranking = all_ranking.loc[all_ranking['ID'].str.contains(card_number_filter, case=False)]
+    ranking = all_ranking.loc[all_ranking['card_number'].str.contains(card_number_filter, case=False)]
 
     vertical_space(1)
 
+    ranking.columns = ['ID', 'Drinks', 'Returns', "Impact"]
     st.table(ranking)
 
     go_btn = None
@@ -74,7 +75,7 @@ with tab1:
     if go_btn or st.session_state["go_submitted"]:
         
         st.session_state["go_submitted"] = True
-        card_num = ranking["ID"].iloc[0]
+        card_num = ranking["card_number"].iloc[0]
         timeframe_dataframe = get_card_data(card_num)
 
         vertical_space(2)
@@ -103,7 +104,7 @@ with tab2:
 
         st.session_state["card_submitted"] = True
 
-        card_info = all_ranking.loc[all_ranking['ID'].str.contains(card_number, case=False)]
+        card_info = all_ranking.loc[all_ranking['card_number'].str.contains(card_number, case=False)]
         timeframe_dataframe = get_card_data(card_number)
 
         # the other information and gauge plots
