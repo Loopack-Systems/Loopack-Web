@@ -65,7 +65,7 @@ with tab1:
 
     vertical_space(1)
 
-    ranking.columns = ['ID', 'Drinks', 'Returns', "Impact"]
+    #ranking.columns = ['ID', 'Drinks', 'Returns', "Impact"]
     st.table(ranking)
 
     go_btn = None
