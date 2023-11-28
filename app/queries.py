@@ -118,7 +118,7 @@ class Queries():
 
         status = self.__get_users_status()
 
-        df = df.merge(status, on="card_number", how="left")
+        df = df.merge(status, on="ID", how="left")
         df = df.fillna(False)
         df = df.sort_values(by="num_returned_cups")
 
