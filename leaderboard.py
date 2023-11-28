@@ -65,8 +65,9 @@ with tab1:
 
     vertical_space(1)
 
-    #ranking.columns = ['ID', 'Drinks', 'Returns', "Impact"]
-    st.table(ranking)
+    aux = ranking.copy()
+    aux.columns = ['Card Number', 'Drinks', 'Returns', "Impact", "Last Action"]
+    st.table(aux)
 
     go_btn = None
     if len(ranking) == 1 and st.session_state["go_submitted"] == False:
