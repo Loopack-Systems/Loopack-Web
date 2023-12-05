@@ -164,9 +164,14 @@
    */
   let preloader = select('#preloader');
   if (preloader) {
+  
+    setTimeout(() => preloader.remove(), 1)
+
+    /* 
     window.addEventListener('load', () => {
       preloader.remove()
     });
+    */
   }
 
   /**
