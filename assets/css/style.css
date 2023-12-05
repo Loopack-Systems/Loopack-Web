@@ -33,6 +33,14 @@ h6 {
   font-family: "Raleway", sans-serif;
 }
 
+.btn-loopack {
+  background-color: #7ad681 !important;
+}
+
+.btn-loopack:hover {
+  background-color: #45794a !important;
+}
+
 /*--------------------------------------------------------------
 # Back to top button
 --------------------------------------------------------------*/
