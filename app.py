@@ -1,6 +1,6 @@
 import streamlit as st
-from app.queries import Queries
-from app.utils import vertical_space
+from src.queries import Queries
+from src.utils import vertical_space
 
 queries = Queries()
 
