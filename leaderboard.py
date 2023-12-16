@@ -68,6 +68,8 @@ with tab1:
     aux = ranking.copy()
     aux = aux.sort_values(by='card_number', ascending = False)
     aux.columns = ['Card Number', 'Drinks', 'Returns', "Impact", "Last Action"]
+    shit = st.button(shit)
+    print(aux)
     st.table(aux.sort_values(by='Card Number', ascending = False))
 
     go_btn = None
