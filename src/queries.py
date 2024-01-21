@@ -9,7 +9,6 @@ DATABASE_CREDENTIALS = {
     "PASSWORD": st.secrets["DB_PASSWORD"]
 }
 
-
 class Queries():
 
     def __init__(self):
@@ -100,6 +99,8 @@ class Queries():
                     )
                     select
                     c.number as card_number,
+                    c.name as user_name,
+                    c.email as user_email,
                     d.num_drinks,
                     r.num_returned_cups,
                     r.num_returned_cups * 0.1 as impact
@@ -114,15 +115,23 @@ class Queries():
         column_names = [column[0] for column in self.cursor.description]
         
         df = pd.DataFrame(res, columns=column_names)
-        df = df.fillna(0)
+        df["num_drinks"] = df["num_drinks"].fillna(0)
+        df["num_returned_cups"] = df["num_drinks"].fillna(0)
+        df["num_returned_cups"] = df["num_drinks"].fillna(0)
+        df["impact"] = df["impact"].fillna(0)
+
+        df["user_name"] = df["user_name"].fillna("-999")
+        df["user_email"] = df["user_email"].fillna("-999")
 
         status = self.__get_users_status()
 
         df = df.merge(status, on="card_number", how="left")
-        df = df.fillna(False)
+        df["currently_drinking"] = df["currently_drinking"].fillna(False)
         df = df.sort_values(by="num_returned_cups")
 
         self.cursor.close()
+
+        print(df)
 
         return df
     
@@ -202,6 +211,83 @@ class Queries():
 
         return df_daily, df_weekly, df_monthly
     
+
+    def get_all_temporal_returns(self):
+
+        self.cursor = self.conn.cursor()
+
+        query_daily = f"""
+                    select
+                    DATE_FORMAT(event_time, "%Y-%m-%d") as day,
+                    count(cup_id) as num_drinks
+                    from
+                    cup_event ce
+                    join card c on c.id = ce.refund_card_id
+                    where
+                    cup_event_type_id = 2
+                    group by
+                    DATE_FORMAT(event_time, "%Y-%m-%d")
+                    order by
+                    DATE_FORMAT(event_time, "%Y-%m-%d") asc
+                    """
+        
+        self.cursor.execute(query_daily)
+        res = [tuple(row) for row in self.cursor.fetchall()]
+        column_names = [column[0] for column in self.cursor.description]
+        df_daily = pd.DataFrame(res, columns=column_names)
+        df_daily = df_daily.rename(columns={'day': 'event_time'})
+        df_daily["event_time"] = pd.to_datetime(df_daily["event_time"])
+
+        query_weekly = f"""
+                    SELECT
+                    DATE_FORMAT(
+                        ADDDATE(event_time, INTERVAL - DAYOFWEEK(event_time) DAY),
+                        "%Y-%m-%d"
+                    ) as week,
+                    COUNT(cup_id) AS num_drinks
+                    FROM
+                    cup_event ce 
+                    join card c on c.id = ce.refund_card_id
+                    where
+                    cup_event_type_id = 2
+                    GROUP BY
+                    week
+                    ORDER BY week ASC
+                    """
+        
+        self.cursor.execute(query_weekly)
+        res = [tuple(row) for row in self.cursor.fetchall()]
+        column_names = [column[0] for column in self.cursor.description]
+        df_weekly = pd.DataFrame(res, columns=column_names)
+        df_weekly = df_weekly.rename(columns={'week': 'event_time'})
+        df_weekly["event_time"] = pd.to_datetime(df_weekly["event_time"])
+
+        query_monthly = f"""
+                        select
+                        DATE_FORMAT(event_time, "%Y-%m-01") as month,
+                        count(cup_id) as num_drinks
+                        from
+                        cup_event ce
+                        join card c on c.id = ce.refund_card_id
+                        where
+                        cup_event_type_id = 2
+                        group by
+                        month
+                        order by
+                        month asc
+                    """
+        
+        self.cursor.execute(query_monthly)
+        res = [tuple(row) for row in self.cursor.fetchall()]
+        column_names = [column[0] for column in self.cursor.description]
+        df_monthly = pd.DataFrame(res, columns=column_names)
+        df_monthly = df_monthly.rename(columns={'month': 'event_time'})
+        df_monthly["event_time"] = pd.to_datetime(df_monthly["event_time"])
+
+        self.cursor.close()
+
+        return df_daily, df_weekly, df_monthly    
+    
     def get_temporal_usage(self, card_number):
 
         self.cursor = self.conn.cursor()
@@ -280,5 +366,84 @@ class Queries():
         self.cursor.close()
 
         return df_daily, df_weekly, df_monthly
-
     
+    def get_temporal_returns(self, card_number):
+
+            self.cursor = self.conn.cursor()
+
+            query_daily = f"""
+                        select
+                        DATE_FORMAT(event_time, "%Y-%m-%d") as day,
+                        count(cup_id) as num_drinks
+                        from
+                        cup_event ce
+                        join card c on c.id = ce.refund_card_id
+                        where
+                        c.number = '{card_number}'
+                        and cup_event_type_id = 2
+                        group by
+                        DATE_FORMAT(event_time, "%Y-%m-%d")
+                        order by
+                        DATE_FORMAT(event_time, "%Y-%m-%d") asc
+                        """
+            
+            self.cursor.execute(query_daily)
+            res = [tuple(row) for row in self.cursor.fetchall()]
+            column_names = [column[0] for column in self.cursor.description]
+            df_daily = pd.DataFrame(res, columns=column_names)
+            df_daily = df_daily.rename(columns={'day': 'event_time'})
+            df_daily["event_time"] = pd.to_datetime(df_daily["event_time"])
+
+            query_weekly = f"""
+                        SELECT
+                        DATE_FORMAT(
+                            ADDDATE(event_time, INTERVAL - DAYOFWEEK(event_time) DAY),
+                            "%Y-%m-%d"
+                        ) as week,
+                        COUNT(cup_id) AS num_drinks
+                        FROM
+                        cup_event ce 
+                        join card c on c.id = ce.refund_card_id
+                        where
+                        c.number = '{card_number}'
+                        and cup_event_type_id = 2
+                        GROUP BY
+                        week
+                        ORDER BY week ASC
+                        """
+            
+            self.cursor.execute(query_weekly)
+            res = [tuple(row) for row in self.cursor.fetchall()]
+            column_names = [column[0] for column in self.cursor.description]
+            df_weekly = pd.DataFrame(res, columns=column_names)
+            df_weekly = df_weekly.rename(columns={'week': 'event_time'})
+            df_weekly["event_time"] = pd.to_datetime(df_weekly["event_time"])
+
+            query_monthly = f"""
+                            select
+                            DATE_FORMAT(event_time, "%Y-%m-01") as month,
+                            count(cup_id) as num_drinks
+                            from
+                            cup_event ce
+                            join card c on c.id = ce.refund_card_id
+                            where
+                            c.number = '{card_number}'
+                            and cup_event_type_id = 2
+                            group by
+                            month
+                            order by
+                            month asc
+                        """
+            
+            self.cursor.execute(query_monthly)
+            res = [tuple(row) for row in self.cursor.fetchall()]
+            column_names = [column[0] for column in self.cursor.description]
+            df_monthly = pd.DataFrame(res, columns=column_names)
+            df_monthly = df_monthly.rename(columns={'month': 'event_time'})
+            df_monthly["event_time"] = pd.to_datetime(df_monthly["event_time"])
+
+            self.cursor.close()
+
+            return df_daily, df_weekly, df_monthly
+
+        
