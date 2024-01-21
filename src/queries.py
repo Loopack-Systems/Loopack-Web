@@ -131,8 +131,6 @@ class Queries():
 
         self.cursor.close()
 
-        print(df)
-
         return df
     
     def get_all_temporal_usage(self):
