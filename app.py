@@ -1,5 +1,6 @@
 from datetime import datetime
 import streamlit as st
+import webbrowser
 from src.queries import Queries
 from src.utils import vertical_space
 import emoji
@@ -8,6 +9,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 queries = Queries()
+
+def open_url_in_new_page(url):
+    webbrowser.open_new_tab(url)
 
 @st.cache_data
 def get_ranking_data():
@@ -31,14 +35,14 @@ def get_all_data():
 
 def prepare_ranking_to_show(all_ranking, drop_email=True):
 
-    cols = ['Account Number', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking"]
+    cols = ['ID', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking"]
 
     if drop_email:
         aux = all_ranking.drop(columns=["user_email"]).copy()
-        cols = ['Account Number', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking"]
+        cols = ['ID', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking"]
     else:
         aux = all_ranking.copy()
-        cols = ['Account Number', 'User Name', 'User Email', 'Drinks', 'Returns', "Impact", "Drinking"]
+        cols = ['ID', 'User Name', 'User Email', 'Drinks', 'Returns', "Impact", "Drinking"]
    
     aux.columns = cols
     aux = aux.sort_values(by='Impact', ascending = False).reset_index(drop=True).reset_index().rename(columns={"index": "Ranking"})
@@ -59,27 +63,26 @@ def prepare_ranking_to_show(all_ranking, drop_email=True):
     return aux
 
 st.set_page_config(
-    page_title="loopack",
-    page_icon=":green_circle:", 
+    page_title="Loopack",
+    page_icon="src/resources/icon.png", 
     initial_sidebar_state="collapsed"
 )
 
 all_ranking = get_ranking_data()
 
 col1, _ = st.columns(2)
-#col1.title("Loopack")
 col1.image("src/resources/logo.png", use_column_width=True)
 
 vertical_space(2)
 
-issue = st.button("Something Wrong? Tell Us!")
-if issue:
-    pass # go to contact page in website
+if st.button("Something Wrong? Tell Us!"):
+    url_to_open = "https://loopack.pt"
+    open_url_in_new_page(url_to_open)
 
 vertical_space(1)
 
 filter_dashboard_btn = None
-tab1, tab2, tab3, tab4 = st.tabs([":first_place_medal: Leaderboard", "My Dashboard", "FEUP Dashboard", ":bust_in_silhouette: Register My Card"])
+tab1, tab2, tab3, tab4 = st.tabs([":first_place_medal: Leaderboard", "My Dashboard", "FEUP", ":bust_in_silhouette: Register My Card"])
 
 with tab1:
 
@@ -87,60 +90,43 @@ with tab1:
         st.session_state["go_submitted"] = False
 
     vertical_space(1)
-    st.text("Account Number / User Name")
+    st.text("Account ID / User Name")
 
     col21, col22 = st.columns(2)
-    card_number_filter = col21.text_input("Account Number / User Name", label_visibility="collapsed", key="leaderboard")
+    card_number_filter = col21.text_input("Account ID / User Name", label_visibility="collapsed", key="leaderboard")
+
+    vertical_space(1)
     filter_btn = col22.button("Filter")
 
-    vertical_space(2)
+    col211, _, col213, _ = st.columns(4)
 
-    aux = prepare_ranking_to_show(all_ranking)
+    col211.markdown("## Ranking")
 
-    try:
-        aux = aux.loc[(aux['Account Number'].str.contains(card_number_filter, case=False))|(aux['User Name'].str.contains(card_number_filter, case=False))][:15]
-    except:
-        aux = pd.DataFrame()
-
-    #st.dataframe(aux, hide_index=True, use_container_width=True)
-    s1 = dict(selector='th', props=[('text-align', 'center')])
-    s2 = dict(selector='td', props=[('text-align', 'center')])
-    # you can include more styling paramteres, check the pandas docs
-    table = aux.style.set_table_styles([s1,s2]).hide(axis=0).to_html()   
-
-    if len(aux) > 0:
-        st.write(f'{table}', unsafe_allow_html=True, )
-    else:
-        st.error("No data to show!")
-
-    vertical_space(3)
-
-    update_btn = st.button("Update")
+    update_btn = col213.button("Update", type="secondary")
     if update_btn:
         st.cache_resource.clear()
         st.cache_data.clear()
         st.rerun()
 
-    # go_btn = None
-    # if len(ranking) == 1 and st.session_state["go_submitted"] == False:
-    #     vertical_space(2)
-    #     go_btn = st.button("Go to dashboard")
+    aux = prepare_ranking_to_show(all_ranking)
 
-    # if go_btn or st.session_state["go_submitted"]:
+    try:
+        aux = aux.loc[(aux['ID'].str.contains(card_number_filter, case=False))|(aux['User Name'].str.contains(card_number_filter, case=False))][:15]
+    except:
+        aux = pd.DataFrame()
+
+    # s1 = dict(selector='th', props=[('text-align', 'center')])
+    # s2 = dict(selector='td', props=[('text-align', 'center')])
+    # table = aux.style.set_table_styles([s1,s2]).hide(axis=0).to_html()   
         
-    #     st.session_state["go_submitted"] = True
-    #     card_num = ranking["card_number"].iloc[0]
-    #     timeframe_dataframe = get_card_data(card_num)
+    vertical_space(2)
 
-    #     vertical_space(2)
-    #     st.markdown(f"### Card {card_num}")
-    #     vertical_space(2)
-
-    #     col221, col222 = st.columns(2, gap="large")
-    #     col221.markdown("##### Drinks consumption")
-    #     timeframe = col222.radio(label=" ", options=["Daily", "Weekly", "Monthly"], label_visibility="collapsed", horizontal=True, index=1, key="1")
-    #     st.bar_chart(timeframe_dataframe[timeframe], x="event_time", y="num_drinks")
-
+    if len(aux) > 0:
+        aux = aux[["Ranking", "ID", "User Name", "Drinking", "Impact", "Drinks", "Returns"]]
+        st.dataframe(aux.rename(columns={"Ranking": "Rank"}), hide_index=True)
+        #st.write(f'{table}', unsafe_allow_html=True, )
+    else:
+        st.error("No data to show!")
 
 with tab2:
 
@@ -148,10 +134,10 @@ with tab2:
         st.session_state["card_submitted"] = False
 
     vertical_space(1)
-    st.text("Account Number / User Email")
+    st.text("Account ID / User Email")
 
     col31, col32 = st.columns(2)
-    card_input = col31.text_input("Card Number", label_visibility="collapsed", key="my_card")
+    card_input = col31.text_input("Account ID", label_visibility="collapsed", key="my_card")
     my_card_go_btn = col32.button("Go")
 
     if my_card_go_btn or st.session_state["card_submitted"]:
@@ -161,14 +147,14 @@ with tab2:
         aux = prepare_ranking_to_show(all_ranking, drop_email=False)
 
         try:
-            aux = aux.loc[(aux['Account Number']==card_input)|(aux['User Email']==card_input)]
+            aux = aux.loc[(aux['ID']==card_input)|(aux['User Email']==card_input)]
         except:
             aux = pd.DataFrame()
 
         card_info = aux.copy()
 
         if "@" in card_input:
-            card_input = card_info["Account Number"].item()
+            card_input = card_info["ID"].item()
 
         usage_dataframe, returns_dataframe = get_card_data(card_input)
 
@@ -223,12 +209,17 @@ with tab2:
                 frequency = 'D'
 
             df = usage_dataframe[timeframe]
-            all_dates_df = pd.DataFrame({"event_time": pd.date_range(start=df["event_time"].min(), end=datetime.today(), freq=frequency)})
-            df = df.merge(all_dates_df, on="event_time", how='right').fillna(0)
-            fig = px.line(df, x="event_time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Drinks"})
+            df = df.rename(columns={"event_time": "Event Time"})
+            all_dates_df = pd.DataFrame({"Event Time": pd.date_range(start=df["Event Time"].min(), end=datetime.today(), freq=frequency)})
+            df = df.merge(all_dates_df, on="Event Time", how='right').fillna(0)
+            fig = px.line(df, x="Event Time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Drinks"})
             fig.update_traces(fill='tozeroy', line=dict(color='#76d783'), fillcolor='rgba(118, 215, 131, 0.3)')
             fig.update_layout(yaxis=dict(range=[0, max(df['num_drinks']) + 1]))
-            st.plotly_chart(fig)
+            fig.update_layout(clickmode='none')
+            fig.update_yaxes(fixedrange=True)
+            fig.update_xaxes(fixedrange=True)
+            fig.update_layout(clickmode='none', autosize=True, margin=dict(l=0, r=0, t=0, b=0))
+            st.plotly_chart(fig, use_container_width=True)
 
             st.divider()
 
@@ -246,12 +237,16 @@ with tab2:
                 frequency = 'D'
 
             df = returns_dataframe[timeframe2]
-            all_dates_df = pd.DataFrame({"event_time": pd.date_range(start=df["event_time"].min(), end=datetime.today(), freq=frequency)})
-            df = df.merge(all_dates_df, on="event_time", how='right').fillna(0)
-            fig = px.line(df, x="event_time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Returns"})
+            df = df.rename(columns={"event_time": "Event Time"})
+            all_dates_df = pd.DataFrame({"Event Time": pd.date_range(start=df["Event Time"].min(), end=datetime.today(), freq=frequency)})
+            df = df.merge(all_dates_df, on="Event Time", how='right').fillna(0)
+            fig = px.line(df, x="Event Time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Returns"})
             fig.update_traces(fill='tozeroy', line=dict(color='#76d783'), fillcolor='rgba(118, 215, 131, 0.3)')
             fig.update_layout(yaxis=dict(range=[0, max(df['num_drinks']) + 1]))
-            st.plotly_chart(fig)
+            fig.update_yaxes(fixedrange=True)
+            fig.update_xaxes(fixedrange=True)
+            fig.update_layout(clickmode='none', autosize=True, margin=dict(l=0, r=0, t=0, b=0))
+            st.plotly_chart(fig, use_container_width=True)
 
 with tab3:
 
@@ -307,12 +302,16 @@ with tab3:
             frequency = 'D'
 
         df = total_usage_dataframe[timeframe]
-        all_dates_df = pd.DataFrame({"event_time": pd.date_range(start=df["event_time"].min(), end=datetime.today(), freq=frequency)})
-        df = df.merge(all_dates_df, on="event_time", how='right').fillna(0)
-        fig = px.line(df, x="event_time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Drinks"})
+        df = df.rename(columns={"event_time": "Event Time"})
+        all_dates_df = pd.DataFrame({"Event Time": pd.date_range(start=df["Event Time"].min(), end=datetime.today(), freq=frequency)})
+        df = df.merge(all_dates_df, on="Event Time", how='right').fillna(0)
+        fig = px.line(df, x="Event Time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Drinks"})
         fig.update_traces(fill='tozeroy', line=dict(color='#76d783'), fillcolor='rgba(118, 215, 131, 0.3)')
         fig.update_layout(yaxis=dict(range=[0, max(df['num_drinks']) + 1]))
-        st.plotly_chart(fig)
+        fig.update_yaxes(fixedrange=True)
+        fig.update_xaxes(fixedrange=True)
+        fig.update_layout(clickmode='none', autosize=True, margin=dict(l=0, r=0, t=0, b=0))
+        st.plotly_chart(fig, use_container_width=True)
 
         st.divider()
 
@@ -330,9 +329,13 @@ with tab3:
             frequency = 'D'
 
         df = total_returns_dataframe[timeframe2]
-        all_dates_df = pd.DataFrame({"event_time": pd.date_range(start=df["event_time"].min(), end=datetime.today(), freq=frequency)})
-        df = df.merge(all_dates_df, on="event_time", how='right').fillna(0)
-        fig = px.line(df, x="event_time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Returns"})
+        df = df.rename(columns={"event_time": "Event Time"})
+        all_dates_df = pd.DataFrame({"Event Time": pd.date_range(start=df["Event Time"].min(), end=datetime.today(), freq=frequency)})
+        df = df.merge(all_dates_df, on="Event Time", how='right').fillna(0)
+        fig = px.line(df, x="Event Time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Returns"})
         fig.update_traces(fill='tozeroy', line=dict(color='#76d783'), fillcolor='rgba(118, 215, 131, 0.3)')
         fig.update_layout(yaxis=dict(range=[0, max(df['num_drinks']) + 1]))
-        st.plotly_chart(fig)
+        fig.update_yaxes(fixedrange=True)
+        fig.update_xaxes(fixedrange=True)
+        fig.update_layout(clickmode='none', autosize=True, margin=dict(l=0, r=0, t=0, b=0))
+        st.plotly_chart(fig, use_container_width=True)
