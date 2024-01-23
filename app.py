@@ -54,7 +54,7 @@ def prepare_ranking_to_show(all_ranking, drop_email=True):
     aux["Impact"] = aux["Impact"].astype(float).apply(lambda x: str(round(x,1)))
 
     aux["Drinking"] = aux["Drinking"].replace(False, emoji.emojize(":red_circle:"))
-    aux["Drinking"] = aux["Drinking"].replace(False, emoji.emojize(":green_circle:"))
+    aux["Drinking"] = aux["Drinking"].replace(True, emoji.emojize(":green_circle:"))
 
     aux["Ranking"] = aux["Ranking"].replace(1, emoji.emojize(":1st_place_medal:"))
     aux["Ranking"] = aux["Ranking"].replace(2, emoji.emojize(":2nd_place_medal:"))

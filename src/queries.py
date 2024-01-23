@@ -108,6 +108,7 @@ class Queries():
                     drinks d
                     join returned r on d.refund_card_id = r.refund_card_id
                     right join card c on c.id = d.refund_card_id
+                    where c.is_test = 0 or c.is_test is null
                 """
         
         self.cursor.execute(query)
