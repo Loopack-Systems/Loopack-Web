@@ -2,3 +2,5 @@ pymysql
 pandas
 numpy
 cryptography
+plotly
+emoji
