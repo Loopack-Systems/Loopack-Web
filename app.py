@@ -7,6 +7,7 @@ import emoji
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import re
 
 queries = Queries()
 
@@ -339,3 +340,66 @@ with tab3:
         fig.update_xaxes(fixedrange=True)
         fig.update_layout(clickmode='none', autosize=True, margin=dict(l=0, r=0, t=0, b=0))
         st.plotly_chart(fig, use_container_width=True)
+
+with tab4:
+    
+    st.markdown("## Register")
+
+    vertical_space(2)
+
+    st.text("User Name")
+    username = st.text_input("User Name", label_visibility="collapsed", placeholder="First and last name")
+
+    st.text("Card RFID")
+    card_id = st.text_input("Card RFID", label_visibility="collapsed", placeholder="Hexadecimal code")
+
+    st.text("Email")
+    email = st.text_input("Email", label_visibility="collapsed")
+
+    st.text("Phone Number")
+    phone = st.text_input("Phone Number", label_visibility="collapsed")
+
+    vertical_space(1)
+    register_btn = st.button("Submit")
+
+    if register_btn:
+
+        valid = True
+
+        if len(username) > 0:
+            names_list = username.split(" ")
+            username = names_list[0]
+            if len(names_list) > 1:
+                username += " " + names_list[-1]
+        else:
+            valid = False
+            st.error("Missing user name!")
+
+        if len(card_id) > 0:
+            card_id_decimal = int(card_id.replace(":",""), 16)
+        else:
+            valid = False
+            st.error("Missing card RFID!")
+
+        if len(email) == 0:
+            valid = False
+            st.error("Missing email!")
+        else:
+            if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+                valid = False
+                st.error("Invalid email!")
+
+        if not phone.replace("+", "").replace(" ", "").isdigit():
+            valid = False
+            st.error("Invalid phone number!")
+        
+        if valid:
+            try:
+                validated = queries.validate_new_card_inputs(card_id_decimal, email, phone)
+                if validated:
+                    res = queries.register_card(card_id_decimal, username, email, phone)
+                    st.success('Card registered!', icon="✅")
+                else:
+                    st.error("The card ID, email or phone are already registered!")
+            except:
+                st.error("Something went wrong! Please try again or report issue.")
