@@ -1714,3 +1714,27 @@ section {
       font-size: 90px;
   }
 }
+
+
+/* 17. FAQ
+--------------------------------------------------------------------------------*/
+
+
+.accordion {
+	--bs-accordion-btn-bg: #7ad681;
+  --bs-accordion-btn-color: white;
+  --bs-accordion-active-color: #444444;
+	--bs-accordion-active-bg: #a3daa7d0;
+  --bs-accordion-btn-focus-box-shadow: None;
+
+}
+
+.accordion-button {
+  font-family: "Open Sans", sans-serif;
+  font-size: large;
+
+}
+
+.accordion-body {
+  font-family: "Open Sans", sans-serif;
+}
