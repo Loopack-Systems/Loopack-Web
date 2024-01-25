@@ -108,6 +108,7 @@ class Queries():
                     drinks d
                     join returned r on d.refund_card_id = r.refund_card_id
                     right join card c on c.id = d.refund_card_id
+                    where c.is_test = 0 or c.is_test is null
                 """
         
         self.cursor.execute(query)
@@ -444,4 +445,33 @@ class Queries():
 
             return df_daily, df_weekly, df_monthly
 
+    def register_card(self, card_id_decimal, username, email, phone):
+
+        self.cursor = self.conn.cursor()
+
+        query = f"insert into card (id, number, name, email, is_test) values ('{card_id_decimal}', '{phone}', '{username}', '{email}', 0)"
         
+        res = self.cursor.execute(query)
+        self.conn.commit()
+        self.cursor.close()
+
+        return res
+    
+    def validate_new_card_inputs(self, card_id_decimal, email, phone):
+
+        self.cursor = self.conn.cursor()
+
+        query = f"select id from card where id = '{card_id_decimal}' or number = '{phone}' or email = '{email}'"
+
+        self.cursor.execute(query)
+        res = [tuple(row) for row in self.cursor.fetchall()]
+        column_names = [column[0] for column in self.cursor.description]
+
+        df = pd.DataFrame(res, columns=column_names)
+
+        self.cursor.close()
+
+        if len(df) == 0:
+            return True
+        else:
+            return False
