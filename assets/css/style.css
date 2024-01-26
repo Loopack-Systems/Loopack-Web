@@ -309,7 +309,7 @@ h6 {
   justify-content: space-between;
   padding: 10px 0 10px 30px;
   font-size: 16px;
-  font-weight: 350;
+  font-weight: 100;
   color: #fff;
   white-space: nowrap;
   transition: 0.3s;
@@ -638,7 +638,7 @@ section {
   width: 120px;
   height: 1px;
   display: inline-block;
-  background: #ffde9e;
+  background: #7ad681;
   margin: 4px 10px;
 }
 
@@ -847,7 +847,7 @@ section {
 .cta .cta-btn:hover {
   background: #7ad681;
   border-color: #7ad681;
-  color: #151515;
+  color: #444444;
 }
 
 /*--------------------------------------------------------------
@@ -1721,10 +1721,17 @@ section {
 
 
 .accordion {
-	--bs-accordion-btn-bg: #7ad681;
-  --bs-accordion-btn-color: white;
+	--bs-accordion-btn-bg: #7ad682e4;
+  --bs-accordion-btn-color: #444444;
   --bs-accordion-active-color: #444444;
-	--bs-accordion-active-bg: #a3daa7d0;
+	--bs-accordion-active-bg: whitesmoke;
+  --bs-accordion-btn-focus-box-shadow: None;
+
+}
+
+.accordion-item:hover {
+	--bs-accordion-btn-bg: whitesmoke;
+  --bs-accordion-btn-color: #444444;
   --bs-accordion-btn-focus-box-shadow: None;
 
 }
@@ -1732,6 +1739,7 @@ section {
 .accordion-button {
   font-family: "Open Sans", sans-serif;
   font-size: large;
+  font-weight:500;
 
 }
 
