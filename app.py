@@ -143,6 +143,8 @@ with tab2:
 
     if my_card_go_btn or st.session_state["card_submitted"]:
 
+        all_ranking = get_ranking_data()
+
         st.session_state["card_submitted"] = True
 
         aux = prepare_ranking_to_show(all_ranking, drop_email=False)
@@ -346,6 +348,11 @@ with tab4:
     st.markdown("## Register")
 
     vertical_space(2)
+ 
+    st.write("**Don't know the RFID tag of your U.Porto card?**")
+    st.write("It's so simple you won't believe it! Install the mobile application NFC Tools ([Android](https://play.google.com/store/apps/details?id=com.wakdev.wdnfc&hl=en&gl=US) / [iOS](https://apps.apple.com/us/app/nfc-tools/id1252962749)), follow the instructions and read your card there. The RFID tag is the serial number (an hexadecimal code).")
+
+    vertical_space(2)
 
     st.text("User Name")
     username = st.text_input("User Name", label_visibility="collapsed", placeholder="First and last name")
@@ -389,9 +396,10 @@ with tab4:
                 valid = False
                 st.error("Invalid email!")
 
-        if not phone.replace("+", "").replace(" ", "").isdigit():
-            valid = False
-            st.error("Invalid phone number!")
+        if len(phone) > 0:
+            if not phone.replace("+", "").replace(" ", "").isdigit():
+                valid = False
+                st.error("Invalid phone number!")
         
         if valid:
             try:
