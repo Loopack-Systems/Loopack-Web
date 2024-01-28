@@ -98,15 +98,16 @@ class Queries():
                         refund_card_id
                     )
                     select
+                    c.id as card_id,
                     c.number as card_number,
                     c.name as user_name,
                     c.email as user_email,
                     d.num_drinks,
                     r.num_returned_cups,
-                    r.num_returned_cups * 0.1 as impact
+                    r.num_returned_cups * 20.69 as impact
                     from
                     drinks d
-                    join returned r on d.refund_card_id = r.refund_card_id
+                    left join returned r on d.refund_card_id = r.refund_card_id
                     right join card c on c.id = d.refund_card_id
                     where c.is_test = 0 or c.is_test is null
                 """
@@ -117,8 +118,7 @@ class Queries():
         
         df = pd.DataFrame(res, columns=column_names)
         df["num_drinks"] = df["num_drinks"].fillna(0)
-        df["num_returned_cups"] = df["num_drinks"].fillna(0)
-        df["num_returned_cups"] = df["num_drinks"].fillna(0)
+        df["num_returned_cups"] = df["num_returned_cups"].fillna(0)
         df["impact"] = df["impact"].fillna(0)
 
         df["user_name"] = df["user_name"].fillna("-999")
@@ -475,3 +475,34 @@ class Queries():
             return True
         else:
             return False
+        
+    def get_last_events(self, card_input):
+
+        self.cursor = self.conn.cursor()
+
+        query = f"""
+                SELECT event_time, device_id, cup_event_type
+                FROM (
+                    SELECT event_time, device_id, cet.name as cup_event_type
+                    FROM cup_event ce
+                    JOIN cup_event_type cet on ce.cup_event_type_id = cet.id
+                    WHERE refund_card_id = '{card_input}'
+                    UNION ALL
+                    SELECT event_time, device_id, "Payment" as cup_event_type
+                    FROM payment_event
+                    WHERE refund_card_id = '{card_input}'
+                ) AS combined_result
+                WHERE event_time > CURRENT_DATE - INTERVAL 1 DAY
+                ORDER BY event_time DESC;
+                """
+
+        self.cursor.execute(query)
+
+        res = [tuple(row) for row in self.cursor.fetchall()]
+        column_names = [column[0] for column in self.cursor.description]
+
+        df = pd.DataFrame(res, columns=column_names)
+
+        self.cursor.close()
+
+        return df

@@ -8,17 +8,18 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import re
+import time
 
 queries = Queries()
 
 def open_url_in_new_page(url):
     webbrowser.open_new_tab(url)
 
-@st.cache_data
+#@st.cache_data
 def get_ranking_data():
     return queries.get_users_ranking()
 
-@st.cache_data
+#@st.cache_data
 def get_card_data(card_number):
     df_daily, df_weekly, df_monthly = queries.get_temporal_usage(card_number)
     usage_dataframe = {"Daily": df_daily, "Weekly": df_weekly, "Monthly": df_monthly}
@@ -26,7 +27,7 @@ def get_card_data(card_number):
     returns_dataframe = {"Daily": df_daily, "Weekly": df_weekly, "Monthly": df_monthly}
     return usage_dataframe, returns_dataframe
 
-@st.cache_data
+#@st.cache_data
 def get_all_data():
     df_daily, df_weekly, df_monthly = queries.get_all_temporal_usage()
     total_usage_dataframe = {"Daily": df_daily, "Weekly": df_weekly, "Monthly": df_monthly}
@@ -36,18 +37,18 @@ def get_all_data():
 
 def prepare_ranking_to_show(all_ranking, drop_email=True):
 
-    cols = ['ID', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking"]
+    cols = ['Tag', 'ID', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking"]
 
     if drop_email:
         aux = all_ranking.drop(columns=["user_email"]).copy()
-        cols = ['ID', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking"]
+        cols = ['Tag', 'ID', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking"]
     else:
         aux = all_ranking.copy()
-        cols = ['ID', 'User Name', 'User Email', 'Drinks', 'Returns', "Impact", "Drinking"]
+        cols = ['Tag', 'ID', 'User Name', 'User Email', 'Drinks', 'Returns', "Impact", "Drinking"]
    
     aux.columns = cols
     aux = aux.sort_values(by='Impact', ascending = False).reset_index(drop=True).reset_index().rename(columns={"index": "Ranking"})
-    
+
     aux["Ranking"] = aux["Ranking"].apply(lambda x: x+1)
     aux["User Name"] = aux["User Name"].replace("-999", "--------")
     aux["Drinks"] = aux["Drinks"].astype(int)
@@ -124,7 +125,7 @@ with tab1:
 
     if len(aux) > 0:
         aux = aux[["Ranking", "ID", "User Name", "Drinking", "Impact", "Drinks", "Returns"]]
-        st.dataframe(aux.rename(columns={"Ranking": "Rank"}).drop(columns="ID"), hide_index=True)
+        st.dataframe(aux.rename(columns={"Ranking": "Rank", "Impact": "Impact (g of CO2)"}).drop(columns="ID"), hide_index=True)
         #st.write(f'{table}', unsafe_allow_html=True, )
     else:
         st.error("No data to show!")
@@ -135,7 +136,7 @@ with tab2:
         st.session_state["card_submitted"] = False
 
     vertical_space(1)
-    st.text("Account ID / User Email")
+    st.text("User Email")
 
     col31, col32 = st.columns(2)
     card_input = col31.text_input("Account ID", label_visibility="collapsed", key="my_card")
@@ -156,14 +157,18 @@ with tab2:
 
         card_info = aux.copy()
 
-        if "@" in card_input:
-            card_input = card_info["ID"].item()
+        error = False
 
-        usage_dataframe, returns_dataframe = get_card_data(card_input)
+        try:
+            if "@" in card_input:
+                card_input = card_info["ID"].item()
+            usage_dataframe, returns_dataframe = get_card_data(card_input)
+        except:
+            error = True
 
         # the other information and gauge plots
 
-        if len(card_info) == 0 or len(usage_dataframe["Daily"]) == 0 or len(usage_dataframe["Weekly"]) == 0 or len(usage_dataframe["Monthly"]) == 0:
+        if error or (len(card_info) == 0 or len(usage_dataframe["Daily"]) == 0 or len(usage_dataframe["Weekly"]) == 0 or len(usage_dataframe["Monthly"]) == 0):
             st.error("Card not found or never used!")
         else:        
             user_name = card_info["User Name"].item()
@@ -176,7 +181,7 @@ with tab2:
             with col311:
                 fig_drinks = go.Figure(go.Indicator(
                                 mode = "number+delta",
-                                value = int(round(float(card_info["Returns"].item()))),
+                                value = int(round(float(card_info["Drinks"].item()))),
                                 title = {"text": "Drinks<br><span style='font-size:0.8em;color:gray'>Number of cups</span><br>"},
                                 domain = {'row': 0, 'column': 1}))
                 st.plotly_chart(fig_drinks, use_container_width=True)
@@ -192,10 +197,15 @@ with tab2:
 
             # Gauge plot for 'Impact'
             with col313:
+                impact = int(round(float(card_info["Impact"].item())))
+                unit="g"
+                if impact > 1000:
+                    impact = round(impact/1000, 1)
+                    unit = "kg"
                 fig_impact = go.Figure(go.Indicator(
                                 mode = "number+delta",
-                                value = int(round(float(card_info["Impact"].item()))),
-                                title = {"text": "Impact<br><span style='font-size:0.8em;color:gray'>kg of CO2</span><br>"},
+                                value = impact,
+                                title = {"text": f"Impact<br><span style='font-size:0.8em;color:gray'>{unit} of CO2</span><br>"},
                                 domain = {'row': 0, 'column': 1}))
 
                 st.plotly_chart(fig_impact, use_container_width=True)
@@ -212,17 +222,20 @@ with tab2:
                 frequency = 'D'
 
             df = usage_dataframe[timeframe]
-            df = df.rename(columns={"event_time": "Event Time"})
-            all_dates_df = pd.DataFrame({"Event Time": pd.date_range(start=df["Event Time"].min(), end=datetime.today(), freq=frequency)})
-            df = df.merge(all_dates_df, on="Event Time", how='right').fillna(0)
-            fig = px.line(df, x="Event Time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Drinks"})
-            fig.update_traces(fill='tozeroy', line=dict(color='#76d783'), fillcolor='rgba(118, 215, 131, 0.3)')
-            fig.update_layout(yaxis=dict(range=[0, max(df['num_drinks']) + 1]))
-            fig.update_layout(clickmode='none')
-            fig.update_yaxes(fixedrange=True)
-            fig.update_xaxes(fixedrange=True)
-            fig.update_layout(clickmode='none', autosize=True, margin=dict(l=0, r=0, t=0, b=0))
-            st.plotly_chart(fig, use_container_width=True)
+            if len(df) > 0:
+                df = df.rename(columns={"event_time": "Event Time"})
+                all_dates_df = pd.DataFrame({"Event Time": pd.date_range(start=df["Event Time"].min(), end=datetime.today(), freq=frequency)})
+                df = df.merge(all_dates_df, on="Event Time", how='right').fillna(0)
+                fig = px.line(df, x="Event Time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Drinks"})
+                fig.update_traces(fill='tozeroy', line=dict(color='#76d783'), fillcolor='rgba(118, 215, 131, 0.3)')
+                fig.update_layout(yaxis=dict(range=[0, max(df['num_drinks']) + 1]))
+                fig.update_layout(clickmode='none')
+                fig.update_yaxes(fixedrange=True)
+                fig.update_xaxes(fixedrange=True)
+                fig.update_layout(clickmode='none', autosize=True, margin=dict(l=0, r=0, t=0, b=0))
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("No cup returns yet")
 
             st.divider()
 
@@ -240,16 +253,36 @@ with tab2:
                 frequency = 'D'
 
             df = returns_dataframe[timeframe2]
-            df = df.rename(columns={"event_time": "Event Time"})
-            all_dates_df = pd.DataFrame({"Event Time": pd.date_range(start=df["Event Time"].min(), end=datetime.today(), freq=frequency)})
-            df = df.merge(all_dates_df, on="Event Time", how='right').fillna(0)
-            fig = px.line(df, x="Event Time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Returns"})
-            fig.update_traces(fill='tozeroy', line=dict(color='#76d783'), fillcolor='rgba(118, 215, 131, 0.3)')
-            fig.update_layout(yaxis=dict(range=[0, max(df['num_drinks']) + 1]))
-            fig.update_yaxes(fixedrange=True)
-            fig.update_xaxes(fixedrange=True)
-            fig.update_layout(clickmode='none', autosize=True, margin=dict(l=0, r=0, t=0, b=0))
-            st.plotly_chart(fig, use_container_width=True)
+            if len(df) > 0:
+                df = df.rename(columns={"event_time": "Event Time"})
+                all_dates_df = pd.DataFrame({"Event Time": pd.date_range(start=df["Event Time"].min(), end=datetime.today(), freq=frequency)})
+                df = df.merge(all_dates_df, on="Event Time", how='right').fillna(0)
+                fig = px.line(df, x="Event Time", y="num_drinks", line_shape="linear", labels={"num_drinks": "Number of Returns"})
+                fig.update_traces(fill='tozeroy', line=dict(color='#76d783'), fillcolor='rgba(118, 215, 131, 0.3)')
+                fig.update_layout(yaxis=dict(range=[0, max(df['num_drinks']) + 1]))
+                fig.update_yaxes(fixedrange=True)
+                fig.update_xaxes(fixedrange=True)
+                fig.update_layout(clickmode='none', autosize=True, margin=dict(l=0, r=0, t=0, b=0))
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("No cup returns yet")
+
+            vertical_space(2)
+            st.markdown("##### Last events")
+            vertical_space(1)
+            last_usage = queries.get_last_events(card_info["Tag"].item())
+            if len(last_usage) > 0:
+                last_usage = last_usage.loc[last_usage["cup_event_type"]!="Payment"]
+                last_usage["event_time"] = last_usage["event_time"].dt.strftime('%Y-%m-%d %H:%M')
+                last_usage["cup_event_type"] = last_usage["cup_event_type"].replace("Entered collector", "Left cup in smart bin").replace("Left dispenser", "Collected cup from dispenser")
+                st.dataframe(last_usage[["event_time", "cup_event_type"]].rename(columns={"event_time": "Time", "cup_event_type": "Event"}), hide_index=True)
+            else:
+                st.warning("No usage yet!")
+
+            if st.button("Update", key=1234):
+                time.sleep(0.1)
+
+
 
 with tab3:
 
@@ -285,10 +318,15 @@ with tab3:
 
         # Gauge plot for 'Impact'
         with col313:
+            impact = int(round(float(aux["Impact"].astype(float).sum())))
+            unit="g"
+            if impact > 1000:
+                impact = round(impact/1000, 1)
+                unit = "kg"
             fig_impact = go.Figure(go.Indicator(
                             mode = "number+delta",
-                            value = int(round(float(aux["Impact"].astype(float).sum()))),
-                            title = {"text": "Impact<br><span style='font-size:0.8em;color:gray'>kg of CO2</span><br>"},
+                            value = impact,
+                            title = {"text": f"Impact<br><span style='font-size:0.8em;color:gray'>{unit} of CO2</span><br>"},
                             domain = {'row': 0, 'column': 1}))
 
             st.plotly_chart(fig_impact, use_container_width=True)
