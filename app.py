@@ -77,7 +77,7 @@ col1.image("src/resources/logo.png", use_column_width=True)
 vertical_space(2)
 
 if st.button("Something Wrong? Tell Us!"):
-    url_to_open = "https://loopack.pt"
+    url_to_open = "https://docs.google.com/forms/d/e/1FAIpQLSfEZB6QDWMKFryoydga2TYGuI8J1vQ-_-bLVt7RS7KDEy-WCg/viewform"
     open_url_in_new_page(url_to_open)
 
 vertical_space(1)
@@ -91,10 +91,10 @@ with tab1:
         st.session_state["go_submitted"] = False
 
     vertical_space(1)
-    st.text("Account ID / User Name")
+    st.text("User Name")
 
     col21, col22 = st.columns(2)
-    card_number_filter = col21.text_input("Account ID / User Name", label_visibility="collapsed", key="leaderboard")
+    card_number_filter = col21.text_input("User Name", label_visibility="collapsed", key="leaderboard")
 
     vertical_space(1)
     filter_btn = col22.button("Filter")
@@ -110,9 +110,9 @@ with tab1:
         st.rerun()
 
     aux = prepare_ranking_to_show(all_ranking)
-
+    
     try:
-        aux = aux.loc[(aux['ID'].str.contains(card_number_filter, case=False))|(aux['User Name'].str.contains(card_number_filter, case=False))][:15]
+        aux = aux.loc[(aux['ID'].str.contains(card_number_filter, case=False))|(aux['User Name'].str.contains(card_number_filter, case=False))][:5]
     except:
         aux = pd.DataFrame()
 
@@ -124,7 +124,7 @@ with tab1:
 
     if len(aux) > 0:
         aux = aux[["Ranking", "ID", "User Name", "Drinking", "Impact", "Drinks", "Returns"]]
-        st.dataframe(aux.rename(columns={"Ranking": "Rank"}), hide_index=True)
+        st.dataframe(aux.rename(columns={"Ranking": "Rank"}).drop(columns="ID"), hide_index=True)
         #st.write(f'{table}', unsafe_allow_html=True, )
     else:
         st.error("No data to show!")
