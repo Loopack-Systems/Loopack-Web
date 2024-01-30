@@ -96,20 +96,56 @@ class Queries():
                         cup_event_type_id = 2
                         group by
                         refund_card_id
+                    ),
+                    last_event as (
+                        select
+                        refund_card_id,
+                        max(event_time) as last_event
+                        from
+                        cup_event
+                        group by
+                        refund_card_id
                     )
                     select
-                    c.id as card_id,
+                    d.refund_card_id as card_id,
                     c.number as card_number,
                     c.name as user_name,
                     c.email as user_email,
                     d.num_drinks,
                     r.num_returned_cups,
-                    r.num_returned_cups * 20.69 as impact
+                    r.num_returned_cups * 20.69 as impact,
+                    le.last_event
                     from
                     drinks d
                     left join returned r on d.refund_card_id = r.refund_card_id
-                    right join card c on c.id = d.refund_card_id
-                    where c.is_test = 0 or c.is_test is null
+                    left join last_event le on d.refund_card_id = le.refund_card_id
+                    left join card c on c.id = d.refund_card_id
+                    where
+                    (
+                        c.is_test = 0
+                        or c.is_test is null
+                    )
+                    and d.refund_card_id not in(-998, -999)
+                    union
+                    select
+                    id as card_id,
+                    number as card_number,
+                    name as user_name,
+                    email as user_email,
+                    0 as num_drinks,
+                    0 as num_returned_cups,
+                    0 as impact,
+                    NULL as last_event
+                    from
+                    card
+                    where
+                    id not in(
+                        select distinct
+                        refund_card_id
+                        from
+                        cup_event
+                    )
+                    and is_test = 0
                 """
         
         self.cursor.execute(query)
@@ -130,6 +166,8 @@ class Queries():
         df["currently_drinking"] = df["currently_drinking"].fillna(False)
         df = df.sort_values(by="num_returned_cups")
 
+        df = df[["card_id", "card_number", "user_name", "user_email", "num_drinks", "num_returned_cups", "impact", "currently_drinking", "last_event"]]
+
         self.cursor.close()
 
         return df
@@ -144,9 +182,9 @@ class Queries():
                     count(cup_id) as num_drinks
                     from
                     cup_event ce
-                    join card c on c.id = ce.refund_card_id
+                    left join card c on c.id = ce.refund_card_id
                     where
-                    cup_event_type_id = 3
+                    cup_event_type_id = 3 and event_time >= '2024-01-30 00:00:00'
                     group by
                     DATE_FORMAT(event_time, "%Y-%m-%d")
                     order by
@@ -169,9 +207,9 @@ class Queries():
                     COUNT(cup_id) AS num_drinks
                     FROM
                     cup_event ce 
-                    join card c on c.id = ce.refund_card_id
+                    left join card c on c.id = ce.refund_card_id
                     where
-                    cup_event_type_id = 3
+                    cup_event_type_id = 3 and event_time >= '2024-01-30 00:00:00'
                     GROUP BY
                     week
                     ORDER BY week ASC
@@ -190,9 +228,9 @@ class Queries():
                         count(cup_id) as num_drinks
                         from
                         cup_event ce
-                        join card c on c.id = ce.refund_card_id
+                        left join card c on c.id = ce.refund_card_id
                         where
-                        cup_event_type_id = 3
+                        cup_event_type_id = 3 and event_time >= '2024-01-30 00:00:00'
                         group by
                         month
                         order by
@@ -221,9 +259,9 @@ class Queries():
                     count(cup_id) as num_drinks
                     from
                     cup_event ce
-                    join card c on c.id = ce.refund_card_id
+                    left join card c on c.id = ce.refund_card_id
                     where
-                    cup_event_type_id = 2
+                    cup_event_type_id = 2 and event_time >= '2024-01-30 00:00:00'
                     group by
                     DATE_FORMAT(event_time, "%Y-%m-%d")
                     order by
@@ -246,9 +284,9 @@ class Queries():
                     COUNT(cup_id) AS num_drinks
                     FROM
                     cup_event ce 
-                    join card c on c.id = ce.refund_card_id
+                    left join card c on c.id = ce.refund_card_id
                     where
-                    cup_event_type_id = 2
+                    cup_event_type_id = 2 and event_time >= '2024-01-30 00:00:00'
                     GROUP BY
                     week
                     ORDER BY week ASC
@@ -267,9 +305,9 @@ class Queries():
                         count(cup_id) as num_drinks
                         from
                         cup_event ce
-                        join card c on c.id = ce.refund_card_id
+                        left join card c on c.id = ce.refund_card_id
                         where
-                        cup_event_type_id = 2
+                        cup_event_type_id = 2 and event_time >= '2024-01-30 00:00:00'
                         group by
                         month
                         order by

@@ -37,20 +37,20 @@ def get_all_data():
 
 def prepare_ranking_to_show(all_ranking, drop_email=True):
 
-    cols = ['Tag', 'ID', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking"]
+    cols = ['Tag', 'ID', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking", "Last Event"]
 
     if drop_email:
         aux = all_ranking.drop(columns=["user_email"]).copy()
-        cols = ['Tag', 'ID', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking"]
+        cols = ['Tag', 'ID', 'User Name', 'Drinks', 'Returns', "Impact", "Drinking", "Last Event"]
     else:
         aux = all_ranking.copy()
-        cols = ['Tag', 'ID', 'User Name', 'User Email', 'Drinks', 'Returns', "Impact", "Drinking"]
+        cols = ['Tag', 'ID', 'User Name', 'User Email', 'Drinks', 'Returns', "Impact", "Drinking", "Last Event"]
    
     aux.columns = cols
-    aux = aux.sort_values(by='Impact', ascending = False).reset_index(drop=True).reset_index().rename(columns={"index": "Ranking"})
+    aux = aux.sort_values(by=['Impact', 'User Name'], ascending = False).reset_index(drop=True).reset_index().rename(columns={"index": "Ranking"})
 
     aux["Ranking"] = aux["Ranking"].apply(lambda x: x+1)
-    aux["User Name"] = aux["User Name"].replace("-999", "--------")
+    aux["User Name"] = aux["User Name"].replace("-999", None)
     aux["Drinks"] = aux["Drinks"].astype(int)
     aux["Returns"] = aux["Returns"].astype(int)
     aux["Impact"] = aux["Impact"].astype(float).apply(lambda x: str(round(x,1)))
@@ -111,9 +111,10 @@ with tab1:
         st.rerun()
 
     aux = prepare_ranking_to_show(all_ranking)
-    
+
     try:
-        aux = aux.loc[(aux['ID'].str.contains(card_number_filter, case=False))|(aux['User Name'].str.contains(card_number_filter, case=False))][:5]
+        if len(card_number_filter) > 0:
+            aux = aux.loc[(aux['ID'].str.contains(card_number_filter, case=False))|(aux['User Name'].str.contains(card_number_filter, case=False))][:15]
     except:
         aux = pd.DataFrame()
 
@@ -124,7 +125,7 @@ with tab1:
     vertical_space(2)
 
     if len(aux) > 0:
-        aux = aux[["Ranking", "ID", "User Name", "Drinking", "Impact", "Drinks", "Returns"]]
+        aux = aux[["Ranking", "ID", "User Name", "Drinking", "Impact", "Drinks", "Returns", "Last Event", "Tag"]].rename(columns={"Tag": "U.Porto Card ID"})
         st.dataframe(aux.rename(columns={"Ranking": "Rank", "Impact": "Impact (g of CO2)"}).drop(columns="ID"), hide_index=True)
         #st.write(f'{table}', unsafe_allow_html=True, )
     else:
@@ -288,7 +289,9 @@ with tab3:
 
     aux = prepare_ranking_to_show(all_ranking)
     total_usage_dataframe, total_returns_dataframe = get_all_data()
-    
+
+    aux = aux.loc[(~aux['ID'].isin(["-999", "1", "6", "2"]))&(aux["Last Event"]>='2024-01-30 00:00:00')]
+
     if len(total_usage_dataframe["Daily"]) == 0 or len(total_usage_dataframe["Weekly"]) == 0 or len(total_usage_dataframe["Monthly"]) == 0:
         st.error("No data")
     else:        
@@ -302,7 +305,7 @@ with tab3:
         with col311:
             fig_drinks = go.Figure(go.Indicator(
                             mode = "number+delta",
-                            value = int(aux["Returns"].sum()),
+                            value = int(aux["Drinks"].sum()),
                             title = {"text": "Drinks<br><span style='font-size:0.8em;color:gray'>Number of cups</span><br>"},
                             domain = {'row': 0, 'column': 1}))
             st.plotly_chart(fig_drinks, use_container_width=True)
