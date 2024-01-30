@@ -126,6 +126,7 @@ with tab1:
 
     if len(aux) > 0:
         aux = aux[["Ranking", "ID", "User Name", "Drinking", "Impact", "Drinks", "Returns", "Last Event", "Tag"]].rename(columns={"Tag": "U.Porto Card ID"})
+        aux["User Name"] = aux["User Name"].fillna("NOT REGISTERED")
         st.dataframe(aux.rename(columns={"Ranking": "Rank", "Impact": "Impact (g of CO2)"}).drop(columns="ID"), hide_index=True)
         #st.write(f'{table}', unsafe_allow_html=True, )
     else:
