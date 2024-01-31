@@ -1,6 +1,5 @@
 from datetime import datetime
 import streamlit as st
-import webbrowser
 from src.queries import Queries
 from src.utils import vertical_space
 import emoji
@@ -11,9 +10,6 @@ import re
 import time
 
 queries = Queries()
-
-def open_url_in_new_page(url):
-    webbrowser.open_new_tab(url)
 
 #@st.cache_data
 def get_ranking_data():
@@ -77,9 +73,7 @@ col1.image("src/resources/logo.png", use_column_width=True)
 
 vertical_space(2)
 
-if st.button("Something Wrong? Tell Us!"):
-    url_to_open = "https://docs.google.com/forms/d/e/1FAIpQLSfEZB6QDWMKFryoydga2TYGuI8J1vQ-_-bLVt7RS7KDEy-WCg/viewform"
-    open_url_in_new_page(url_to_open)
+st.write("Something Wrong? [Tell Us!](https://docs.google.com/forms/d/e/1FAIpQLSfEZB6QDWMKFryoydga2TYGuI8J1vQ-_-bLVt7RS7KDEy-WCg/viewform)")
 
 vertical_space(1)
 
