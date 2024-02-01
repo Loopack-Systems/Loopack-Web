@@ -419,7 +419,17 @@ with tab4:
             st.error("Missing user name!")
 
         if len(card_id) > 0:
-            card_id_decimal = int(card_id.replace(":",""), 16)
+            if ":" in card_id:
+                card_id_decimal = []
+                for hex_code in card_id.split(":"):
+                    card_id_decimal.append(str(int(hex_code, 16)))
+                card_id_decimal = "-".join(card_id_decimal)
+            else:
+                card_id_decimal = []
+                for i in range(0, len(card_id_decimal)-1, 2):
+                    hex_code = card_id_decimal[i:i+2]
+                    card_id_decimal.append(str(int(hex_code, 16)))
+                card_id_decimal = "-".join(card_id_decimal) 
         else:
             valid = False
             st.error("Missing card RFID!")
