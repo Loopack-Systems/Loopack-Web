@@ -121,6 +121,7 @@ with tab1:
     if len(aux) > 0:
         aux = aux[["Ranking", "ID", "User Name", "Drinking", "Impact", "Drinks", "Returns", "Last Event", "Tag"]].rename(columns={"Tag": "U.Porto Card ID"})
         aux["User Name"] = aux["User Name"].fillna("NOT REGISTERED")
+        aux["U.Porto Card ID"] = aux["U.Porto Card ID"].apply(lambda x: ":".join([hex(int(num))[2:].upper() for num in x.split("-")]))
         st.dataframe(aux.rename(columns={"Ranking": "Rank", "Impact": "Impact (g of CO2)"}).drop(columns="ID"), hide_index=True)
         #st.write(f'{table}', unsafe_allow_html=True, )
     else:
@@ -426,8 +427,8 @@ with tab4:
                 card_id_decimal = "-".join(card_id_decimal)
             else:
                 card_id_decimal = []
-                for i in range(0, len(card_id_decimal)-1, 2):
-                    hex_code = card_id_decimal[i:i+2]
+                for i in range(0, len(card_id)-1, 2):
+                    hex_code = card_id[i:i+2]
                     card_id_decimal.append(str(int(hex_code, 16)))
                 card_id_decimal = "-".join(card_id_decimal) 
         else:
