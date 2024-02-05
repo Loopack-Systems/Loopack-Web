@@ -655,6 +655,15 @@ section {
 /*--------------------------------------------------------------
 # About
 --------------------------------------------------------------*/
+
+@media screen and (max-width: 750px) {
+  iframe {
+      max-width: 100% !important;
+      width: auto !important;
+      height: auto !important;
+  }
+}
+
 .about .content h3 {
   font-weight: 700;
   font-size: 28px;
