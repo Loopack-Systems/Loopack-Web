@@ -82,7 +82,7 @@ class Queries():
                         from
                         cup_event
                         where
-                        cup_event_type_id = 3
+                        cup_event_type_id = 3 and fake = 0 and created_at > "2024-02-05"
                         group by
                         refund_card_id
                     ),
@@ -93,7 +93,7 @@ class Queries():
                         from
                         cup_event
                         where
-                        cup_event_type_id = 2
+                        cup_event_type_id = 2 and fake = 0 and created_at > "2024-02-05"
                         group by
                         refund_card_id
                     ),
@@ -103,6 +103,7 @@ class Queries():
                         max(event_time) as last_event
                         from
                         cup_event
+                      	where fake = 0 and created_at > "2024-02-05"
                         group by
                         refund_card_id
                     )
@@ -140,10 +141,9 @@ class Queries():
                     card
                     where
                     id not in(
-                        select distinct
-                        refund_card_id
-                        from
-                        cup_event
+                      select distinct refund_card_id 
+                      from cup_event
+                      where fake = 0 and created_at > "2024-02-05"
                     )
                     and is_test = 0
                 """
@@ -184,7 +184,7 @@ class Queries():
                     cup_event ce
                     left join card c on c.id = ce.refund_card_id
                     where
-                    cup_event_type_id = 3 and event_time >= '2024-01-30 00:00:00'
+                    cup_event_type_id = 3 and event_time >= '2024-02-05 00:00:00'
                     group by
                     DATE_FORMAT(event_time, "%Y-%m-%d")
                     order by
@@ -261,7 +261,7 @@ class Queries():
                     cup_event ce
                     left join card c on c.id = ce.refund_card_id
                     where
-                    cup_event_type_id = 2 and event_time >= '2024-01-30 00:00:00'
+                    cup_event_type_id = 2 and event_time >= '2024-02-05 00:00:00'
                     group by
                     DATE_FORMAT(event_time, "%Y-%m-%d")
                     order by
@@ -483,12 +483,44 @@ class Queries():
 
             return df_daily, df_weekly, df_monthly
 
-    def register_card(self, card_id_decimal, username, email, phone):
+    def get_card_details(self, card_number):
+        self.cursor = self.conn.cursor()
+
+        query = f"""
+                    SELECT number, email, payment
+                    FROM card 
+                    WHERE number = {card_number}
+                    """
+        self.cursor.execute(query)
+        res = [tuple(row) for row in self.cursor.fetchall()]
+        self.cursor.close()
+
+        phone = res[0][0]
+        email = res[0][1]
+        payment = res[0][2]
+        return phone, email, payment
+    
+    def update_card_details(self, card_number, new_phone, new_email, new_payment):
+        self.cursor = self.conn.cursor()
+
+        query = f"""
+                    UPDATE card
+                    SET number = {new_phone}, email = '{new_email}', payment = '{new_payment}'
+                    WHERE number = {card_number}
+                    """
+        self.cursor.execute(query)
+        self.cursor.close()
+
+
+
+    def register_card(self, card_id_decimal, username, email, phone, payment):
 
         self.cursor = self.conn.cursor()
 
-        query = f"insert into card (id, number, name, email, is_test) values ('{card_id_decimal}', '{phone}', '{username}', '{email}', 0)"
-        
+        query = f"insert into card (id, number, name, email, is_test, payment) values ('{card_id_decimal}', '{phone}', '{username}', '{email}', 0, '{payment}')"
+        if payment is None:
+            query = f"insert into card (id, number, name, email, is_test) values ('{card_id_decimal}', 0, '{username}', '{email}', 0)"
+
         res = self.cursor.execute(query)
         self.conn.commit()
         self.cursor.close()
